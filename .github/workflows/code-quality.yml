@@ -1,0 +1,116 @@
+name: Code Quality
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            clang-tidy \
+            pkg-config \
+            libgtk-3-dev \
+            libgl1-mesa-dev \
+            libglew-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libdbus-1-dev \
+            libfontconfig-dev \
+            libssl-dev \
+            libcurl4-openssl-dev \
+            libpulse-dev
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.xmake/packages
+          key: ${{ runner.os }}-xmake-${{ hashFiles('xmake.lua') }}
+          restore-keys: ${{ runner.os }}-xmake-
+
+      - name: clang-tidy verify config
+        run: bash -c 'OUT=$(clang-tidy --dump-config 2>&1); echo "$OUT"; if echo "$OUT" | grep -q "error:"; then exit -1; fi'
+
+      - name: Configure (debug, clang)
+        run: xmake f -m debug --toolchain=clang -y
+
+      - name: Build (generates compile_commands.json)
+        run: xmake -b example_app
+
+      - name: Run clang-tidy
+        run: python3 .github/tidy-summary.py
+
+  valgrind:
+    name: valgrind
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            valgrind \
+            pkg-config \
+            libgtk-3-dev \
+            libgl1-mesa-dev \
+            libglew-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libdbus-1-dev \
+            libfontconfig-dev \
+            libssl-dev \
+            libcurl4-openssl-dev \
+            libpulse-dev \
+            googletest \
+            libgtest-dev
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.xmake/packages
+          key: ${{ runner.os }}-xmake-${{ hashFiles('xmake.lua') }}
+          restore-keys: ${{ runner.os }}-xmake-
+
+      - name: Configure (debug)
+        run: xmake f -m debug -y
+
+      - name: Build Tests
+        run: xmake -b Tests
+
+      - name: Run tests with valgrind
+        run: |
+          valgrind \
+            --suppressions=${{ github.workspace }}/valgrind_suppressions.supp \
+            --error-exitcode=1 \
+            --tool=memcheck \
+            --leak-check=full \
+            --track-origins=yes \
+            --gen-suppressions=all \
+            build/linux/x86_64/debug/Tests
