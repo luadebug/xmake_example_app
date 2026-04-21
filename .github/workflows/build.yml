@@ -1,0 +1,153 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.xmake/packages
+          key: ${{ runner.os }}-xmake-${{ hashFiles('xmake.lua') }}
+          restore-keys: ${{ runner.os }}-xmake-
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libgtk-3-dev \
+            libgl1-mesa-dev \
+            libglew-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libdbus-1-dev \
+            libfontconfig-dev \
+            libssl-dev \
+            libcurl4-openssl-dev \
+            libpulse-dev \
+            googletest \
+            libgtest-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pkg-config googletest
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: choco install innosetup
+
+      - name: Setup Clang 22 (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22 all
+
+      - name: Setup LLVM (Windows)
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
+
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            xmake f -m releasedbg --cc=clang-22 --cxx=clang++-22 -y
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            xmake f -m releasedbg --toolchain=llvm -y
+          else
+            xmake f -m releasedbg -y
+          fi
+
+      - name: Build
+        run: xmake -b example_app
+
+      - name: Build Tests
+        run: xmake -b Tests
+
+      - name: Run Tests
+        run: xmake run Tests
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          xmake install -o install
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a artifacts/${{ runner.os }}.zip ./install/*
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            zip -r artifacts/${{ runner.os }}.zip ./install/
+          else
+            tar -czf artifacts/${{ runner.os }}.tar.gz ./install/
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: artifacts/*
+          name: ${{ runner.os }}
+
+
+  release-draft:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    if: github.event_name != 'pull_request'
+    needs: [build-desktop]
+    name: "Release draft"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        run: |
+          VERSION=$(grep -Po '(?<=set_version\(")[0-9.]+' xmake.lua)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION = $VERSION"
+
+      - name: Remove old release drafts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/{owner}/{repo}/releases \
+            --jq '.[] | select(.draft == true) | .id' \
+            | xargs -I '{}' gh api -X DELETE repos/{owner}/{repo}/releases/{}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: 'true'
+
+      - name: Create release draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ env.VERSION }}" \
+            --draft \
+            --title "v${{ env.VERSION }}" \
+            --target $GITHUB_SHA \
+            artifacts/*.*
