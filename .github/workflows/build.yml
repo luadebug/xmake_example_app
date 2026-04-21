@@ -75,16 +75,17 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install llvm -y
 
-      - name: Configure
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            xmake f -m releasedbg --cc=clang-22 --cxx=clang++-22 -y
-          elif [ "${{ runner.os }}" = "Windows" ]; then
-            xmake f -m releasedbg --toolchain=llvm -y
-          else
-            xmake f -m releasedbg -y
-          fi
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: xmake f -m releasedbg --cc=clang-22 --cxx=clang++-22 -y
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: xmake f -m releasedbg -y
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: xmake f -p windows -m releasedbg --toolchain=llvm -y
 
       - name: Build
         run: xmake -b example_app
