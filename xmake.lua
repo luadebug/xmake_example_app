@@ -42,7 +42,6 @@ target("example_app")
                 add_shflags("/WHOLEARCHIVE:aui.xml", { force = true })
                 add_shflags("/WHOLEARCHIVE:aui.image", { force = true })
                 add_shflags("/WHOLEARCHIVE:aui.core", { force = true })
-
             end
         end
     end)
