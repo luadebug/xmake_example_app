@@ -14,25 +14,19 @@ function _get_aui_package(target)
   return nil
 end
 
--- Locate aui.toolbox binary. Checks the aui package bin dir first, then the
--- aui-toolbox package (needed on macOS where the cmake build omits the binary),
--- and finally falls back to PATH.
-function _find_toolbox(aui_installdir, target)
+-- Locate aui.toolbox binary. On macOS the AUI cmake build wraps every
+-- executable in a MACOSX_BUNDLE, so the binary lives inside an .app bundle.
+function _find_toolbox(aui_installdir)
+  -- Linux / Windows
   local p = path.join(aui_installdir, "bin", "aui.toolbox")
   if os.isfile(p) then return p end
 
   p = path.join(aui_installdir, "bin", "aui.toolbox.exe")
   if os.isfile(p) then return p end
 
-  -- aui-toolbox is a separate package that builds the toolbox via xmake;
-  -- required as a fallback when the aui cmake build does not install it.
-  for _, pkg in pairs(target:pkgs()) do
-    if pkg:name() == "aui-toolbox" then
-      local suffix = is_host("windows") and ".exe" or ""
-      p = path.join(pkg:installdir(), "bin", "aui.toolbox" .. suffix)
-      if os.isfile(p) then return p end
-    end
-  end
+  -- macOS: cmake installs the .app bundle, so the real binary is inside it
+  p = path.join(aui_installdir, "bin", "aui.toolbox.app", "Contents", "MacOS", "aui.toolbox")
+  if os.isfile(p) then return p end
 
   return find_program("aui.toolbox")
 end
@@ -56,11 +50,9 @@ function assets(target)
   local aui_installdir = aui_pkg:installdir()
   wprint("AUI package install directory: " .. aui_installdir)
 
-  local toolbox_path = _find_toolbox(aui_installdir, target)
+  local toolbox_path = _find_toolbox(aui_installdir)
   if not toolbox_path then
-    raise("aui.toolbox not found. Checked: "
-      .. aui_installdir .. "/bin/, the aui-toolbox package, and PATH. "
-      .. "Ensure add_requires('aui-toolbox 7.1.2') is in xmake.lua.")
+    raise("aui.toolbox not found. Checked bin/, bin/aui.toolbox.app/Contents/MacOS/, and PATH under " .. aui_installdir)
   end
 
   local assets_dir = path.join(path.absolute(target:scriptdir()), "assets")
