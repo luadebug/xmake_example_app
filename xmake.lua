@@ -33,7 +33,9 @@ target("example_app")
         -- Workaround for clang-cl toolchain bug where /WHOLEARCHIVE is ignored in shared library linking
          if is_plat("windows") then
             import("core.tool.toolchain")
-            if toolchain:name() == "clang-cl" then
+            local host_toolchain
+            host_toolchain = toolchain.load("clang-cl", {plat = "windows", arch = os.arch()})
+            if host_toolchain:check() then
                 target:add("ldflags", "/WHOLEARCHIVE:aui.views", { force = true })
                 target:add("ldflags", "/WHOLEARCHIVE:aui.xml", { force = true })
                 target:add("ldflags", "/WHOLEARCHIVE:aui.image", { force = true })
