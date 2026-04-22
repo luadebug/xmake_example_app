@@ -15,7 +15,7 @@ function aui.enable_tests(parent_name)
         raise("aui.enable_tests: tests/ directory not found")
     end
 
-    add_requires("gtest")
+    add_requires("gtest", {system = false})
 
     target("Tests")
         set_kind("binary")

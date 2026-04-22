@@ -12,6 +12,9 @@ set_version("0.0.14")
 
 -- Download aui package to use for targets later
 add_requires("aui 7.1.2")
+-- aui.toolbox is bundled inside the aui package on Linux/Windows but the cmake
+-- build omits it on macOS; aui-toolbox builds it separately via xmake as a fallback.
+add_requires("aui-toolbox 7.1.2")
 
 includes("xmake/aui_tests.lua")
 
@@ -24,6 +27,8 @@ target("example_app")
     add_headerfiles("src/*.h")
     -- Add AUI package to target while linking only required components
     add_packages("aui", {components = {"core", "image", "views", "xml"}})
+    -- Expose aui-toolbox install dir so on_prepare can locate the binary on macOS
+    add_packages("aui-toolbox")
     -- Resolve linking by grouping AUI components into link groups
     add_linkgroups("aui.views", "aui.xml", "aui.image", "aui.core", {whole = true})
     -- Pack assets before building the target
