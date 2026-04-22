@@ -71,10 +71,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 22 all
 
-      - name: Setup LLVM (Windows)
-        if: runner.os == 'Windows'
-        run: choco install llvm -y
-
       - name: Configure (Linux)
         if: runner.os == 'Linux'
         run: xmake f -m releasedbg --cc=clang-22 --cxx=clang++-22 -y
@@ -85,7 +81,7 @@ jobs:
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        run: xmake f -p windows -m releasedbg --toolchain=llvm -y
+        run: xmake f -p windows -m releasedbg --toolchain=clang-cl -y
 
       - name: Build
         run: xmake -b example_app
