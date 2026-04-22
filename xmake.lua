@@ -36,14 +36,14 @@ target("example_app")
             local host_toolchain
             host_toolchain = toolchain.load("clang-cl", {plat = "windows", arch = os.arch()})
             if host_toolchain:check() then
-                target:add("ldflags", "/WHOLEARCHIVE:aui.views", { force = true })
-                target:add("ldflags", "/WHOLEARCHIVE:aui.xml", { force = true })
-                target:add("ldflags", "/WHOLEARCHIVE:aui.image", { force = true })
-                target:add("ldflags", "/WHOLEARCHIVE:aui.core", { force = true })
-                target:add("shflags", "/WHOLEARCHIVE:aui.views", { force = true })
-                target:add("shflags", "/WHOLEARCHIVE:aui.xml", { force = true })
-                target:add("shflags", "/WHOLEARCHIVE:aui.image", { force = true })
-                target:add("shflags", "/WHOLEARCHIVE:aui.core", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.views.lib", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.xml.lib", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.image.lib", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.core.lib", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.views.lib", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.xml.lib", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.image.lib", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.core.lib", { force = true })
             end
         end
     end)
