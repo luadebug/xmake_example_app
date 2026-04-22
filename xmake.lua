@@ -30,6 +30,21 @@ target("example_app")
     on_prepare(function(target)
         import("xmake.aui", {alias = "aui"})
         aui.assets(target)
+        -- Workaround for clang-cl toolchain bug where /WHOLEARCHIVE is ignored in shared library linking
+         if is_plat("windows") then
+            import("core.tool.toolchain")
+            if toolchain:name() == "clang-cl" then
+                add_ldflags("/WHOLEARCHIVE:aui.views", { force = true })
+                add_ldflags("/WHOLEARCHIVE:aui.xml", { force = true })
+                add_ldflags("/WHOLEARCHIVE:aui.image", { force = true })
+                add_ldflags("/WHOLEARCHIVE:aui.core", { force = true })
+                add_shflags("/WHOLEARCHIVE:aui.views", { force = true })
+                add_shflags("/WHOLEARCHIVE:aui.xml", { force = true })
+                add_shflags("/WHOLEARCHIVE:aui.image", { force = true })
+                add_shflags("/WHOLEARCHIVE:aui.core", { force = true })
+
+            end
+        end
     end)
 target_end()
 
