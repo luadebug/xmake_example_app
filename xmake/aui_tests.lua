@@ -31,6 +31,23 @@ function aui.enable_tests(parent_name)
             import("core.project.project")
             import("core.project.config")
 
+            -- Workaround for clang-cl toolchain bug where /WHOLEARCHIVE is ignored in shared library linking
+            if is_plat("windows") then
+                import("core.tool.toolchain")
+                local host_toolchain
+                host_toolchain = toolchain.load("clang-cl", {plat = "windows", arch = os.arch()})
+                if host_toolchain:check() then
+                    target:add("ldflags", "/WHOLEARCHIVE:aui.views.lib", { force = true })
+                    target:add("ldflags", "/WHOLEARCHIVE:aui.xml.lib", { force = true })
+                    target:add("ldflags", "/WHOLEARCHIVE:aui.image.lib", { force = true })
+                    target:add("ldflags", "/WHOLEARCHIVE:aui.core.lib", { force = true })
+                    target:add("shflags", "/WHOLEARCHIVE:aui.views.lib", { force = true })
+                    target:add("shflags", "/WHOLEARCHIVE:aui.xml.lib", { force = true })
+                    target:add("shflags", "/WHOLEARCHIVE:aui.image.lib", { force = true })
+                    target:add("shflags", "/WHOLEARCHIVE:aui.core.lib", { force = true })
+                end
+            end
+
             -- Generate the gmock entry point
             local gen_dir = path.join(path.absolute(config.builddir()), ".gens", "aui_tests")
             os.mkdir(gen_dir)
