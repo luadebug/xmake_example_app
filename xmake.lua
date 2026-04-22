@@ -34,14 +34,14 @@ target("example_app")
          if is_plat("windows") then
             import("core.tool.toolchain")
             if toolchain:name() == "clang-cl" then
-                add_ldflags("/WHOLEARCHIVE:aui.views", { force = true })
-                add_ldflags("/WHOLEARCHIVE:aui.xml", { force = true })
-                add_ldflags("/WHOLEARCHIVE:aui.image", { force = true })
-                add_ldflags("/WHOLEARCHIVE:aui.core", { force = true })
-                add_shflags("/WHOLEARCHIVE:aui.views", { force = true })
-                add_shflags("/WHOLEARCHIVE:aui.xml", { force = true })
-                add_shflags("/WHOLEARCHIVE:aui.image", { force = true })
-                add_shflags("/WHOLEARCHIVE:aui.core", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.views", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.xml", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.image", { force = true })
+                target:add("ldflags", "/WHOLEARCHIVE:aui.core", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.views", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.xml", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.image", { force = true })
+                target:add("shflags", "/WHOLEARCHIVE:aui.core", { force = true })
             end
         end
     end)
