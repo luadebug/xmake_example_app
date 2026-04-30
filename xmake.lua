@@ -8,7 +8,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "c
 set_languages("c++20")
 
 -- CI_PROJECT_VERSION
-set_version("0.0.14")
+set_version("0.0.15")
 
 -- Download aui package to use for targets later
 add_requires("aui 7.1.2")
