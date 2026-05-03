@@ -54,7 +54,9 @@ jobs:
             libcurl4-openssl-dev \
             libpulse-dev \
             googletest \
-            libgtest-dev
+            libgtest-dev \
+            libglew-dev \
+            glew-utils
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
